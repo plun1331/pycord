@@ -18,57 +18,52 @@ v2.0.0
 
 - :meth:`abc.Messageable.can_send` method added to ``abc.Messageable``.
 - New enum :class:`EmbeddedActivity` and method :meth:`VoiceChannel.create_activity_invite` for creating activity invites.
-- :class:`TypeError` is not raised when token passed to :meth:`Client.run` is not an :class:`str`.
-- ``get_or_fetch_user`` added to :class:`Client`.
+- Added :meth:`Client.get_or_fetch_user`.
 - ``with_counts`` parameter added to :meth:`Client.fetch_guild` to get ``approximate_member_count`` and ``approximate_presence_count`` on the invite's guild object.
-    - Subsequently added ``approximate_member_count`` and ``approximate_presence_count`` to :class:`Guild`.
 - Colors :attr:`Colour.nitro_pink` and :attr:`Colour.embed_background` added.
-    - :attr:`Colour.embed_background` takes a parameter ``theme`` with the 3 possible values of ``dark``, ``light``, or ``amoled``.
 - :meth:`Embed.remove_image` and :meth:`Embed.remove_thumbnail` added to the embed class for removing the image and thumbnails.
 - Added :attr:`File.description`.
 - Added :attr:`Attachment.description` and :attr:`Attachment.ephemeral`.
 - You can now edit message attachments.
 - Added :attr:`Guild.premium_progress_bar_enabled`.
-- Added :attr:`Member.communication_disabled_until`, :attr:`Member.timed_out`, and ability to set timeout via :meth:`Member.edit`.
-    - Shortcut methods such as :meth:`Member.timeout`, :meth:`Member.timeout_for` (alias for previous), :meth:`Member.remove_timeout`.
-- Added :attr:`Permissions.use_application_commands`, :attr:`Permissions.start_embedded_activities`, and :attr:`Permissions.moderate_members`.
-- Flags:
-    - New user flags:
-        - :attr:`UserFlags.partner_or_verification_application`
-        - :attr:`UserFlags.underage_deleted`
-        - :attr:`UserFlags.bot_http_interactions`
-        - :attr:`UserFlags.spammer`
-    - New public user flags:
-        - :attr:`PublicUserFlags.premium_promo_dismissed`
-        - :attr:`PublicUserFlags.bot_http_interactions`
-    - New message flags:
-        - :attr:`MessageFlags.loading`
-        - :attr:`MessageFlags.failed_to_mention_some_roles_in_thread`
-    - New system channel flag:
-        - :attr:`SystemChannelFlags.join_notification_replies`
-    - New intent:
-        - :attr:`Intents.scheduled_events`
-    - New application flags:
-        - :attr:`ApplicationFlags.managed_emoji`
-        - :attr:`ApplicationFlags.group_dm_create`
-        - :attr:`ApplicationFlags.rpc_has_connected`
-        - :attr:`ApplicationFlags.gateway_message_content`
-        - :attr:`ApplicationFlags.gateway_message_content_limited`
-    - New :attr:`Guild.features`
-- Welcome Screens
-    - :meth:`Guild.welcome_screen` to retrieve the welcome screen object.
-    - :meth:`Guild.edit_welcome_screen` to edit
-- Scheduled Events
-    - New :class:`ScheduledEventStatus`, :class:`ScheduledEventPrivacyLevel`, and :class:`ScheduledEventLocationType`.
-    - ``scheduled_event_create``, ``scheduled_event_create``, and ``scheduled_event_create`` added to :class:`AuditLogAction`.
-    - Get scheduled event(s) with :meth:`Guild.fetch_scheduled_events`, :meth:`Guild.fetch_scheduled_event`, :meth:`Guild.get_scheduled_event`, and :attr:`Guild.scheduled_events`
-    - Create them with :meth:`Guild`.
-    - Added :attr:`Invite.scheduled_event` and :meth:`Invite.set_scheduled_event`.
-    - ``target_event`` parameter added to :meth:`GuildChannel.create_invite`.
-    - ``status``, ``location``, and ``entity_type`` attributes added to :class:`AuditLogChanges`.
-    - ``event_id`` parameter added to :meth:`Client.fetch_invite` to associate event with the invite.
-    - For full list of attributes and methods: :class:`ScheduledEvent` and :class:`ScheduledEventLocation`.
-- Events and Raw Event Payloads:
+- Added new permissions :attr:`Permissions.use_application_commands`, :attr:`Permissions.start_embedded_activities`, and :attr:`Permissions.moderate_members`.
+- New user flags:
+    - :attr:`UserFlags.partner_or_verification_application`
+    - :attr:`UserFlags.underage_deleted`
+    - :attr:`UserFlags.bot_http_interactions`
+    - :attr:`UserFlags.spammer`
+- New public user flags:
+    - :attr:`PublicUserFlags.premium_promo_dismissed`
+    - :attr:`PublicUserFlags.bot_http_interactions`
+- New message flags:
+    - :attr:`MessageFlags.loading`
+    - :attr:`MessageFlags.failed_to_mention_some_roles_in_thread`
+- New system channel flag:
+    - :attr:`SystemChannelFlags.join_notification_replies`
+- New intent:
+    - :attr:`Intents.scheduled_events`
+- New application flags:
+    - :attr:`ApplicationFlags.managed_emoji`
+    - :attr:`ApplicationFlags.group_dm_create`
+    - :attr:`ApplicationFlags.rpc_has_connected`
+    - :attr:`ApplicationFlags.gateway_message_content`
+    - :attr:`ApplicationFlags.gateway_message_content_limited`
+- New :attr:`Guild.features`
+- Support for interacting with Welcome Screens and Scheduled Events. (:class:`ScheduledEvent`, :class:`WelcomeScreen`)
+- Member Timeout:
+    - :attr:`Member.communication_disabled_until`
+    - :attr:`Member.timed_out`
+    - :meth:`Member.edit`
+    - :meth:`Member.timeout`
+    - :meth:`Member.timeout_for`
+    - :meth:`Member.remove_timeout`.
+- Role Icons:
+    - Added :attr:`Role.unicode_emoji` and :attr:`Role.icon`.
+    - Can be edited with :meth:`Role.edit`.
+- Added thread helper methods:
+    - :meth:`Thread.archive`.
+    - :meth:`Thread.unarchive`.
+- New Events:
     - New event ``on_raw_thread_delete`` with raw payload :class:`RawThreadDeleteEvent`.
     - New event ``on_raw_typing`` with raw payload :class:`RawTypingEvent`.
     - New events ``on_raw_scheduled_event_user_add`` and ``on_raw_scheduled_event_user_remove`` with raw payload :class:`RawScheduledEventSubscription`.
@@ -77,26 +72,19 @@ v2.0.0
     - New event ``on_scheduled_event_delete``.
     - New event ``on_scheduled_event_user_add``.
     - New event ``on_scheduled_event_user_remove``.
-- Role Icons:
-    - Added :attr:`Role.unicode_emoji`.
-    - Added :attr:`Role.icon`.
-    - Added ability to edit the above (:meth:`Role.edit`).
-- Added thread helper methods:
-    - :meth:`Thread.archive`.
-    - :meth:`Thread.unarchive`.
+- :class:`TypeError` is now raised when token passed to :meth:`Client.run` is not an :class:`str`.
 
 Application Commands and Interactions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Added :attr:`Interaction.locale` and :attr:`Interaction.guild_locale`.
 - Added :meth:`Interaction.is_command` and :attr:`Interaction.is_component` to distinguish interaction types.
-- Added ability to send and edit attachments in interactions (:meth:`Interaction.response.send_message` and :meth:`Interaction.edit_original_message`).
-- Added ability to set ``allowed_mentions`` and ``delete_after`` in :meth:`Interaction.response.send_message`.
+- Added ability to send and edit attachments in interactions (:meth:`InteractionResponse.send_message` and :meth:`Interaction.edit_original_message`).
+- Added ability to set ``allowed_mentions`` and ``delete_after`` in :meth:`InteractionResponse.send_message`.
 - Added ability to set ``delete_after`` in :meth:`Interaction.edit_original_message`.
 - Added ability to set ``delay`` in :meth:`Interaction.delete_original_message`.
 - Added ``ephemeral`` parameter to :meth:`Interaction.defer`.
-- Added :meth:`Interaction.send_autocomplete_result` for responding to autocomplete interactions.
-- New class ``discord.Bot`` for facilitating use and management of application commands. Many attributes and methods are similar to those in :class:`~ext.commands.Bot` but for app commands. :class:`Client` is inherited by :class:`Bot`, which is inherited by :class:`~ext.commands.Bot`
+- New class :class:`Bot` for facilitating use and management of application commands. Many attributes and methods are similar to those in :class:`~ext.commands.Bot` but for app commands. :class:`Client` is inherited by :class:`Bot`, which is inherited by :class:`~ext.commands.Bot`
     - New Methods:
         - :meth:`Bot.add_application_command` (similar to :meth:`~ext.commands.Bot.add_command`)
         - :meth:`Bot.remove_application_command` (similar to :meth:`~ext.commands.Bot.remove_command`)
@@ -116,12 +104,13 @@ Application Commands and Interactions
         - :func:`~commands.core.user_command`
         - :func:`~commands.core.message_command`
         - :func:`~commands.core.application_command` (shortcut to the above)
-        - :func:`~commands.core.command` (shortcut to the above,unless in :class:`~ext.commands.Bot`)
+        - :func:`~commands.core.command` (shortcut to the above, unless in :class:`~ext.commands.Bot`)
     - New Attributes
         - :attr:`~bot.ApplicationCommandMixin.pending_application_commands` (property) (all app commands, including those that haven't been registered)
         - :attr:`~ApplicationCommandMixin.application_commands` (property)
     - New Event
         - ``on_application_command_error`` (similar to ``on_command_error``)
+        - ``on_unknown_application_command``
     - Moved Methods (from :class:`commands.Bot` to :class:`discord.Bot`)
         - :meth:`Bot.check` (decorator)
         - :meth:`Bot.add_check`
