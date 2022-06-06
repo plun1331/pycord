@@ -323,6 +323,14 @@ class MessageFlags(BaseFlags):
         .. versionadded:: 2.0
         """
         return 256
+    
+    @flag_value
+    def should_show_link_not_discord_warning(self):
+        """:class:`bool`: Returns ``True`` if this message contains an abusive link.
+
+        .. versionadded:: 2.0
+        """
+        return 1024
 
 
 @fill_with_flags()
