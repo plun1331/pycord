@@ -47,12 +47,13 @@ from typing import (
 
 from ..channel import _threaded_guild_channel_factory
 from ..enums import Enum as DiscordEnum
-from ..enums import MessageType, SlashCommandOptionType, try_enum
+from ..enums import MessageType, IntegrationType, InteractionContextType, SlashCommandOptionType, try_enum
 from ..errors import (
     ApplicationCommandError,
     ApplicationCommandInvokeError,
     CheckFailure,
     ClientException,
+    InvalidArgument,
     ValidationError,
 )
 from ..member import Member
@@ -61,7 +62,7 @@ from ..object import Object
 from ..role import Role
 from ..threads import Thread
 from ..user import User
-from ..utils import MISSING, async_all, find, maybe_coroutine, utcnow
+from ..utils import MISSING, async_all, find, maybe_coroutine, utcnow, warn_deprecated
 from .context import ApplicationContext, AutocompleteContext
 from .options import Option, OptionChoice
 
@@ -226,9 +227,32 @@ class ApplicationCommand(_BaseCommand, Generic[CogT, P, T]):
             "__default_member_permissions__",
             kwargs.get("default_member_permissions", None),
         )
-        self.guild_only: bool | None = getattr(
-            func, "__guild_only__", kwargs.get("guild_only", None)
+
+        integration_types = getattr(
+            func, "__integration_types__", kwargs.get("integration_types", None)
         )
+        contexts = getattr(
+            func, "__contexts__", kwargs.get("contexts", None)
+        )
+        guild_only = getattr(
+            func, "__guild_only__", kwargs.get("guild_only", MISSING)
+        )
+        if guild_only is not MISSING:
+            warn_deprecated("guild_only", "contexts", "2.6")
+        if contexts and guild_only:
+            raise InvalidArgument("cannot pass both 'contexts' and 'guild_only' to ApplicationCommand")
+        if self.guild_ids and ((contexts is not None) or guild_only or integration_types:
+            raise InvalidArgument("the 'contexts' and 'integration_types' parameters are not available for guild commands")
+        
+        self.contexts: set[InteractionContextType] = contexts or {
+            InteractionContextType.guild, 
+            InteractionContextType.bot_dm, 
+            InteractionContextType.private_channel,
+        }
+        if guild_only:
+            self.guild_only: bool | None = guild_only
+        self.integration_types: set[IntegrationType] = integration_types or {IntegrationType.guild_install}
+            
         self.nsfw: bool | None = getattr(func, "__nsfw__", kwargs.get("nsfw", None))
 
     def __repr__(self) -> str:
@@ -273,6 +297,19 @@ class ApplicationCommand(_BaseCommand, Generic[CogT, P, T]):
         self._callback = function
         unwrap = unwrap_function(function)
         self.module = unwrap.__module__
+
+    @property
+    def guild_only(self) -> bool:
+        warn_deprecated("guild_only", "contexts", "2.6")
+        return InteractionContextType.guild in self.contexts and len(self.contexts) == 1
+
+    @guild_only.setter
+    def guild_only(self, value: bool) -> None:
+        warn_deprecated("guild_only", "contexts", "2.6")
+        if value:
+            self.contexts = {InteractionContextType.guild}
+        else:
+            self.contexts = {InteractionContextType.guild, InteractionContextType.bot_dm, InteractionContextType.private_channel}
 
     def _prepare_cooldowns(self, ctx: ApplicationContext):
         if self._buckets.valid:
@@ -629,8 +666,6 @@ class SlashCommand(ApplicationCommand):
         isn't one.
     mention: :class:`str`
         Returns a string that allows you to mention the slash command.
-    guild_only: :class:`bool`
-        Whether the command should only be usable inside a guild.
     nsfw: :class:`bool`
         Whether the command should be restricted to 18+ channels and users.
         Apps intending to be listed in the App Directory cannot have NSFW commands.
@@ -654,6 +689,10 @@ class SlashCommand(ApplicationCommand):
     description_localizations: Dict[:class:`str`, :class:`str`]
         The description localizations for this command. The values of this should be ``"locale": "description"``.
         See `here <https://discord.com/developers/docs/reference#locales>`_ for a list of valid locales.
+    integration_types: set[:class:`IntegrationType`]
+        The installation contexts where this command is available. Cannot be set if this is a guild command.
+    contexts: set[:class:`InteractionContextType`]
+        The interaction contexts where this command is available. Cannot be set if this is a guild command.
     """
 
     type = 1
@@ -874,15 +913,16 @@ class SlashCommand(ApplicationCommand):
             "description": self.description,
             "options": [o.to_dict() for o in self.options],
         }
+        if not self.guild_ids:
+            as_dict["integration_types"] = [it.value for it in self.integration_types]
+            as_dict["contexts"] = [ctx.value for ctx in self.contexts]
+            
         if self.name_localizations is not MISSING:
             as_dict["name_localizations"] = self.name_localizations
         if self.description_localizations is not MISSING:
             as_dict["description_localizations"] = self.description_localizations
         if self.is_subcommand:
             as_dict["type"] = SlashCommandOptionType.sub_command.value
-
-        if self.guild_only is not None:
-            as_dict["dm_permission"] = not self.guild_only
 
         if self.nsfw is not None:
             as_dict["nsfw"] = self.nsfw
