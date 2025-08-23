@@ -419,6 +419,17 @@ class Select(Item[V]):
                     continue
                 resolved.append(Role(guild=guild, state=state, data=_data))
         return resolved
+    
+    @property
+    def default_values(self) -> list[SelectDefaultValue]:
+        """List[:class:`discord.SelectDefaultValue`]: A list of default values that should be selected by default."""
+        return self._underlying.default_values
+    
+    @default_values.setter
+    def default_values(self, value: list[SelectDefaultValue]):
+        if self._underlying.type is ComponentType.string_select:
+            raise InvalidArgument("default_values can only be set on non-string selects")
+        self._underlying.default_values = value
 
     @property
     def width(self) -> int:
