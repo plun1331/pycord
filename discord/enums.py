@@ -80,6 +80,7 @@ __all__ = (
     "MessageReferenceType",
     "SubscriptionStatus",
     "SeparatorSpacingSize",
+    "SelectDefaultValueType",
 )
 
 
@@ -1095,6 +1096,17 @@ class SeparatorSpacingSize(Enum):
     large = 2
 
     def __int__(self):
+        return self.value
+
+
+class SelectDefaultValueType(Enum):
+    """A select menu's default value type."""
+
+    user = "user"
+    role = "role"
+    channel = "channel"
+
+    def __str__(self):
         return self.value
 
 

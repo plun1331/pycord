@@ -80,6 +80,14 @@ class SelectOption(TypedDict):
     default: bool
 
 
+SelectDefaultValueTypes = Literal["user", "role", "channel"]
+
+
+class SelectDefaultValue(TypedDict):
+    type: SelectDefaultValueTypes
+    id: str
+
+
 class SelectMenu(BaseComponent):
     placeholder: NotRequired[str]
     min_values: NotRequired[int]
@@ -90,6 +98,7 @@ class SelectMenu(BaseComponent):
     type: Literal[3, 5, 6, 7, 8]
     custom_id: str
     required: NotRequired[bool]
+    default_values: NotRequired[list[SelectDefaultValue]]
 
 
 class TextDisplayComponent(BaseComponent):
@@ -160,7 +169,6 @@ class LabelComponent(BaseComponent):
 
 
 Component = Union[ActionRow, ButtonComponent, SelectMenu, InputText]
-
 
 AllowedContainerComponents = Union[
     ActionRow,

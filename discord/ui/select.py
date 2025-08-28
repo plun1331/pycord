@@ -30,7 +30,7 @@ import os
 from typing import TYPE_CHECKING, Callable, TypeVar
 
 from ..channel import _threaded_guild_channel_factory
-from ..components import SelectMenu, SelectOption
+from ..components import SelectDefaultValue, SelectMenu, SelectOption
 from ..emoji import AppEmoji, GuildEmoji
 from ..enums import ChannelType, ComponentType
 from ..errors import InvalidArgument
@@ -132,6 +132,9 @@ class Select(Item[V]):
         Whether the select is required or not. Only useable in modals. Defaults to ``True`` in modals.
 
         .. versionadded:: 2.7
+    default_values: List[:class:`discord.SelectDefaultValue`]
+        A list of default values that should be selected by default.
+        This parameter cannot be used with :attr:`discord.ComponentType.string_select`.
     """
 
     __item_repr_attributes__: tuple[str, ...] = (
@@ -147,6 +150,7 @@ class Select(Item[V]):
         "label",
         "description",
         "required",
+        "default_values",
     )
 
     def __init__(
@@ -165,6 +169,7 @@ class Select(Item[V]):
         label: str | None = None,
         description: str | None = None,
         required: bool | None = None,
+        default_values: list[SelectDefaultValue] | None = None,
     ) -> None:
         if options and select_type is not ComponentType.string_select:
             raise InvalidArgument("options parameter is only valid for string selects")
@@ -178,6 +183,10 @@ class Select(Item[V]):
             )
         if required and min_values < 1:
             raise ValueError("min_values must be greater than 0 when required=True")
+        if default_values and select_type is ComponentType.string_select:
+            raise InvalidArgument(
+                "default_values parameter is not valid for string selects"
+            )
         super().__init__()
         self._selected_values: list[str] = []
         self._interaction: Interaction | None = None
@@ -208,6 +217,7 @@ class Select(Item[V]):
             channel_types=channel_types or [],
             id=id,
             required=required,
+            default_values=default_values or [],
         )
         self.row = row
 
@@ -452,6 +462,17 @@ class Select(Item[V]):
                     continue
                 resolved.append(Role(guild=guild, state=state, data=_data))
         return resolved
+    
+    @property
+    def default_values(self) -> list[SelectDefaultValue]:
+        """List[:class:`discord.SelectDefaultValue`]: A list of default values that should be selected by default."""
+        return self._underlying.default_values
+    
+    @default_values.setter
+    def default_values(self, value: list[SelectDefaultValue]):
+        if self._underlying.type is ComponentType.string_select:
+            raise InvalidArgument("default_values can only be set on non-string selects")
+        self._underlying.default_values = value
 
     @property
     def width(self) -> int:
@@ -525,6 +546,7 @@ def select(
     disabled: bool = False,
     row: int | None = None,
     id: int | None = None,
+    default_values: list[SelectDefaultValue] = MISSING,
 ) -> Callable[[ItemCallbackType], ItemCallbackType]:
     """A decorator that attaches a select menu to a component.
 
@@ -574,6 +596,9 @@ def select(
         Whether the select is disabled or not. Defaults to ``False``.
     id: Optional[:class:`int`]
         The select menu's ID.
+    default_values: List[:class:`discord.SelectDefaultValue`]
+        A list of default values that should be selected by default.
+        This parameter cannot be used with :attr:`discord.ComponentType.string_select`.
     """
     if select_type not in _select_types:
         raise ValueError(
@@ -588,6 +613,9 @@ def select(
 
     if channel_types is not MISSING and select_type is not ComponentType.channel_select:
         raise TypeError("channel_types may only be specified for channel selects")
+
+    if default_values is not MISSING and select_type is ComponentType.string_select:
+        raise TypeError("default_values cannot be specified for string selects")
 
     def decorator(func: ItemCallbackType) -> ItemCallbackType:
         if not inspect.iscoroutinefunction(func):
@@ -607,6 +635,8 @@ def select(
             model_kwargs["options"] = options
         if channel_types:
             model_kwargs["channel_types"] = channel_types
+        if default_values:
+            model_kwargs["default_values"] = default_values
 
         func.__discord_ui_model_type__ = Select
         func.__discord_ui_model_kwargs__ = model_kwargs
@@ -653,6 +683,7 @@ def user_select(
     disabled: bool = False,
     row: int | None = None,
     id: int | None = None,
+    default_values: list[SelectDefaultValue] = MISSING,
 ) -> Callable[[ItemCallbackType], ItemCallbackType]:
     """A shortcut for :meth:`discord.ui.select` with select type :attr:`discord.ComponentType.user_select`.
 
@@ -667,6 +698,7 @@ def user_select(
         disabled=disabled,
         row=row,
         id=id,
+        default_values=default_values,
     )
 
 
@@ -679,6 +711,7 @@ def role_select(
     disabled: bool = False,
     row: int | None = None,
     id: int | None = None,
+    default_values: list[SelectDefaultValue] = MISSING,
 ) -> Callable[[ItemCallbackType], ItemCallbackType]:
     """A shortcut for :meth:`discord.ui.select` with select type :attr:`discord.ComponentType.role_select`.
 
@@ -693,6 +726,7 @@ def role_select(
         disabled=disabled,
         row=row,
         id=id,
+        default_values=default_values,
     )
 
 
@@ -705,6 +739,7 @@ def mentionable_select(
     disabled: bool = False,
     row: int | None = None,
     id: int | None = None,
+    default_values: list[SelectDefaultValue] = MISSING,
 ) -> Callable[[ItemCallbackType], ItemCallbackType]:
     """A shortcut for :meth:`discord.ui.select` with select type :attr:`discord.ComponentType.mentionable_select`.
 
@@ -719,6 +754,7 @@ def mentionable_select(
         disabled=disabled,
         row=row,
         id=id,
+        default_values=default_values,
     )
 
 
@@ -732,6 +768,7 @@ def channel_select(
     channel_types: list[ChannelType] = MISSING,
     row: int | None = None,
     id: int | None = None,
+    default_values: list[SelectDefaultValue] = MISSING,
 ) -> Callable[[ItemCallbackType], ItemCallbackType]:
     """A shortcut for :meth:`discord.ui.select` with select type :attr:`discord.ComponentType.channel_select`.
 
@@ -747,4 +784,5 @@ def channel_select(
         channel_types=channel_types,
         row=row,
         id=id,
+        default_values=default_values,
     )

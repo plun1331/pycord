@@ -25,7 +25,7 @@ DEALINGS IN THE SOFTWARE.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, ClassVar, Iterator, TypeVar
+from typing import cast, TYPE_CHECKING, Any, ClassVar, Iterator, TypeVar
 
 from .asset import AssetMixin
 from .colour import Colour
@@ -34,7 +34,7 @@ from .enums import (
     ChannelType,
     ComponentType,
     InputTextStyle,
-    SeparatorSpacingSize,
+    SelectDefaultValueType, SeparatorSpacingSize,
     try_enum,
 )
 from .flags import AttachmentFlags
@@ -43,7 +43,7 @@ from .utils import MISSING, get_slots
 
 if TYPE_CHECKING:
     from .emoji import AppEmoji, GuildEmoji
-    from .types.components import ActionRow as ActionRowPayload
+    from .types.components import ActionRow as ActionRowPayload, SelectDefaultValueTypes
     from .types.components import BaseComponent as BaseComponentPayload
     from .types.components import ButtonComponent as ButtonComponentPayload
     from .types.components import Component as ComponentPayload
@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     from .types.components import MediaGalleryComponent as MediaGalleryComponentPayload
     from .types.components import MediaGalleryItem as MediaGalleryItemPayload
     from .types.components import SectionComponent as SectionComponentPayload
+    from .types.components import SelectDefaultValue as SelectDefaultValuePayload
     from .types.components import SelectMenu as SelectMenuPayload
     from .types.components import SelectOption as SelectOptionPayload
     from .types.components import SeparatorComponent as SeparatorComponentPayload
@@ -67,6 +68,7 @@ __all__ = (
     "Button",
     "SelectMenu",
     "SelectOption",
+    "SelectDefaultValue",
     "InputText",
     "Section",
     "TextDisplay",
@@ -407,6 +409,11 @@ class SelectMenu(Component):
         Whether the select is disabled or not. Not usable in modals. Defaults to ``False``.
     required: Optional[:class:`bool`]
         Whether the select is required or not. Only useable in modals. Defaults to ``True``.
+        Whether the select is disabled or not.
+    default_values: Optional[List[:class:`SelectDefaultValue`]]
+        A list of default values for this select menu.
+        Only available for :attr:`ComponentType.user_select`, :attr:`ComponentType.role_select`,
+        :attr:`ComponentType.mentionable_select`, and :attr:`ComponentType.channel_select`.
     """
 
     __slots__: tuple[str, ...] = (
@@ -418,6 +425,7 @@ class SelectMenu(Component):
         "channel_types",
         "disabled",
         "required",
+        "default_values",
     )
 
     __repr_info__: ClassVar[tuple[str, ...]] = __slots__
@@ -438,6 +446,9 @@ class SelectMenu(Component):
             try_enum(ChannelType, ct) for ct in data.get("channel_types", [])
         ]
         self.required: bool | None = data.get("required")
+        self.default_values: list[SelectDefaultValue] = [
+            SelectDefaultValue.from_dict(dv) for dv in data.get("default_values", [])
+        ]
 
     def to_dict(self) -> SelectMenuPayload:
         payload: SelectMenuPayload = {
@@ -457,6 +468,13 @@ class SelectMenu(Component):
             payload["placeholder"] = self.placeholder
         if self.required is not None:
             payload["required"] = self.required
+        if self.default_values and self.type in (
+            ComponentType.user_select,
+            ComponentType.role_select,
+            ComponentType.mentionable_select,
+            ComponentType.channel_select,
+        ):
+            payload["default_values"] = [dv.to_dict() for dv in self.default_values]
 
         return payload
 
@@ -578,6 +596,52 @@ class SelectOption:
             payload["description"] = self.description
 
         return payload
+
+
+class SelectDefaultValue:
+    """Represents a default value in a :class:`discord.SelectMenu` of type :attr:`discord.ComponentType.user_select`,
+    :attr:`discord.ComponentType.role_select`, :attr:`discord.ComponentType.channel_select`,
+    or :attr:`discord.ComponentType.mentionable_select`.
+
+    These can be created by users.
+
+    .. versionadded:: 2.7
+
+    Attributes
+    ----------
+    id: :class:`int`
+        The ID of the default value.
+    type: :class:`SelectDefaultValueType`
+        The type of the default value.
+    """
+
+    __slots__: tuple[str, ...] = (
+        "id",
+        "type",
+    )
+
+    def __init__(self, *, id: int, type: SelectDefaultValueType) -> None:
+        self.id: int = id
+        self.type: SelectDefaultValueType = type
+
+    def __repr__(self) -> str:
+        return (
+            "<SelectDefaultValue"
+            f" id={self.id!r} type={self.type!r}>"
+        )
+
+    @classmethod
+    def from_dict(cls, data: SelectDefaultValuePayload) -> SelectDefaultValue:
+        return cls(
+            id=int(data["id"]),
+            type=try_enum(SelectDefaultValueType, data["type"]),
+        )
+
+    def to_dict(self) -> SelectDefaultValuePayload:
+        return {
+            "id": str(self.id),
+            "type": cast("SelectDefaultValueTypes", str(self.type)),
+        }
 
 
 class Section(Component):
